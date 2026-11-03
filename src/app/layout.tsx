@@ -1,6 +1,15 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
+import { ClerkProvider } from "@clerk/nextjs";
+import MainLayout from "@/components/MainLayout";
+import Navbar from "@/components/Navbar";
+import { Suspense } from "react";
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-space-grotesk",
+});
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,9 +30,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${spaceGrotesk.variable} ${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className={`${spaceGrotesk.className} min-h-full flex flex-col`}>
+        <ClerkProvider>
+          <Suspense>
+            <MainLayout Navbar={<Navbar />}>{children}</MainLayout>
+          </Suspense>
+        </ClerkProvider>
+      </body>
     </html>
   );
 }
