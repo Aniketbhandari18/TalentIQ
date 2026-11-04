@@ -75,8 +75,8 @@ model Experience{
   company     String
   position    String
   description String? @db.Text
-  startDate   DateTime?
-  endDate     DateTime?
+  startDate   String?
+  endDate     String?
 
   candidateId String
   candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
@@ -99,8 +99,8 @@ model Education {
   institution    String?
   degree         String?
   fieldOfStudy   String?
-  startYear      DateTime?
-  endYear        DateTime?
+  startYear      String?
+  endYear        String?
   gradeType      GradeType?
   grade          Float?
 

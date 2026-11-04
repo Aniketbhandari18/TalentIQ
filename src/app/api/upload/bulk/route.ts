@@ -1,4 +1,5 @@
 import { ApiError } from "@/lib/apiError";
+import { inngest } from "@/lib/inngest/client";
 import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
@@ -57,6 +58,17 @@ export async function POST(req: NextRequest) {
         uploadedById: user.id,
       })),
     });
+
+    // 5. Trigger background job to process resumes
+    const result = await inngest.send(
+      resumes.map((resume) => ({
+        name: "process/resume",
+        data: {
+          resumeId: resume.id,
+          uploadedById: user.id,
+        },
+      })),
+    );
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase/client";
 import { useUser } from "@clerk/nextjs";
 import { useState } from "react";
 
@@ -83,9 +83,6 @@ export default function Home() {
           }),
         );
 
-        // uploadedFiles.push(
-        //   ...results.filter((file): file is UploadedFile => file !== null),
-        // );
         for (let j = 0; j < results.length; j++) {
           const result = results[j];
           if (result) {
