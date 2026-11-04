@@ -6,10 +6,118 @@ datasource db {
   provider = "postgresql"
 }
 
+// This model represents recruiter
 model User {
   id        String   @id @default(cuid())
   clerkId   String   @unique
   email     String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  resumes    Resume[]
+  candidates Candidate[]
+}
+
+model Resume {
+  id       String @id @default(cuid())
+  fileName String
+  fileUrl  String
+  fileSize Int
+
+  candidate Candidate? // represents the extracted candidate information from this resume
+
+  status       ResumeStatus @default(PENDING)
+  errorMessage String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  uploadedById String // id of recruiter who uploaded this resume
+  uploadedBy User @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+}
+
+enum ResumeStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+// This model represents extracted candidate information from the resume
+model Candidate {
+  id       String  @id @default(cuid())
+  name     String?
+  email    String?
+  phone    String?
+  location String?
+  linkedIn String?
+
+  skills           String[]  @default([])
+  normalizedSkills String[]  @default([])
+  projects         Project[]
+  experience       Experience[]
+  education        Education[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  uploadedById String // id of recruiter who uploaded this candidate's resume
+  uploadedBy User @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+
+  resumeId String @unique
+  resume Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+
+  @@index([uploadedById])
+}
+
+model Experience{
+  id          String @id @default(cuid())
+  company     String
+  position    String
+  description String? @db.Text
+  startDate   DateTime?
+  endDate     DateTime?
+
+  candidateId String
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+}
+
+model Project {
+  id           String   @id @default(cuid())
+  title        String
+  description  String   @db.Text
+  technologies String[] @default([])
+  projectUrl   String?
+
+  candidateId String
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+}
+
+model Education {
+  id             String @id @default(cuid())
+  educationLevel EducationLevel
+  institution    String?
+  degree         String?
+  fieldOfStudy   String?
+  startYear      DateTime?
+  endYear        DateTime?
+  gradeType      GradeType?
+  grade          Float?
+
+  candidateId String
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+}
+
+enum EducationLevel {
+  SECONDARY
+  HIGHER_SECONDARY
+  UNDERGRADUATE
+  POSTGRADUATE
+  DOCTORATE
+  OTHER
+}
+
+enum GradeType {
+  PERCENTAGE
+  CGPA
 }
