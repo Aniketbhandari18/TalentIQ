@@ -16,6 +16,7 @@ model User {
 
   resumes    Resume[]
   candidates Candidate[]
+  jobs       Job[]
 }
 
 model Resume {
@@ -33,7 +34,7 @@ model Resume {
   updatedAt DateTime @updatedAt
 
   uploadedById String // id of recruiter who uploaded this resume
-  uploadedBy User @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+  uploadedBy   User   @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
 }
 
 enum ResumeStatus {
@@ -52,26 +53,26 @@ model Candidate {
   location String?
   linkedIn String?
 
-  skills           String[]  @default([])
-  normalizedSkills String[]  @default([])
+  skills           String[]     @default([])
+  normalizedSkills String[]     @default([])
   projects         Project[]
   experience       Experience[]
   education        Education[]
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   uploadedById String // id of recruiter who uploaded this candidate's resume
-  uploadedBy User @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+  uploadedBy   User   @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
 
   resumeId String @unique
-  resume Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
 
   @@index([uploadedById])
 }
 
-model Experience{
-  id          String @id @default(cuid())
+model Experience {
+  id          String  @id @default(cuid())
   company     String
   position    String
   description String? @db.Text
@@ -79,7 +80,7 @@ model Experience{
   endDate     String?
 
   candidateId String
-  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
 }
 
 model Project {
@@ -90,11 +91,11 @@ model Project {
   projectUrl   String?
 
   candidateId String
-  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
 }
 
 model Education {
-  id             String @id @default(cuid())
+  id             String         @id @default(cuid())
   educationLevel EducationLevel
   institution    String?
   degree         String?
@@ -105,12 +106,14 @@ model Education {
   grade          Float?
 
   candidateId String
-  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
 }
 
 enum EducationLevel {
   SECONDARY
   HIGHER_SECONDARY
+  DIPLOMA
+  ASSOCIATE
   UNDERGRADUATE
   POSTGRADUATE
   DOCTORATE
@@ -120,4 +123,88 @@ enum EducationLevel {
 enum GradeType {
   PERCENTAGE
   CGPA
+}
+
+model Job {
+  id            String  @id @default(cuid())
+  title         String
+  description   String  @db.Text
+  minExperience Int?
+  location      String?
+
+  skills               SkillRequirement[]
+  educationRequirement EducationRequirement?
+  jobResponsibility    String[]              @default([])
+
+  status           JobStatus           @default(DRAFT)
+  extractionStatus JobExtractionStatus @default(PENDING)
+  extractionError  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([createdById])
+}
+
+model SkillRequirement {
+  id             String  @id @default(cuid())
+  name           String
+  normalizedName String
+  mustHave       Boolean // preferred not must
+
+  jobId String
+  job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, normalizedName])
+  @@index([normalizedName])
+}
+
+// This model represents the education requirement for a job
+model EducationRequirement {
+  id                String          @id @default(cuid())
+  minEducationLevel EducationLevel?
+
+  acceptedDegrees       AcceptedDegree[]
+  relatedDegreesAllowed Boolean          @default(false) // whether related degrees are allowed or not
+  isMandatory           Boolean          @default(true) // whether any of the accepted degrees is mandatory or not
+
+  // Only used if JD has related degrees allowed in specfic field of study
+  relatedDegreeFieldsOfStudy           String[] @default([]) // for related degrees
+  normalizedRelatedDegreeFieldsOfStudy String[] @default([])
+
+  jobId String @unique
+  job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+}
+
+// This model represents the accepted degree for a job's education requirement
+model AcceptedDegree {
+  id                   String @id @default(cuid())
+  degreeName           String
+  normalizedDegreeName String
+
+  acceptedFieldOfStudy           String[] @default([]) // accepted field of study for this degree, if any
+  normalizedAcceptedFieldOfStudy String[] @default([])
+  isFieldOfStudyMandatory        Boolean  @default(false) // whether any of the accepted field of study is mandatory or not
+
+  educationRequirementId String
+  educationRequirement   EducationRequirement @relation(fields: [educationRequirementId], references: [id], onDelete: Cascade)
+
+  @@unique([educationRequirementId, normalizedDegreeName])
+  @@index([normalizedDegreeName])
+}
+
+enum JobStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+}
+
+enum JobExtractionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
 }

@@ -16,6 +16,9 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const { user } = useUser();
 
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+
   async function handleUpload() {
     const start = Date.now();
     if (!user) return;
@@ -129,6 +132,27 @@ export default function Home() {
     }
   }
 
+  const handleCreate = async () => {
+    const response = await fetch("/api/job/create", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        title: title,
+        description: description,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to register resumes");
+    }
+
+    console.log("Processing started:", data);
+  };
+
   return (
     <div>
       <input
@@ -145,6 +169,13 @@ export default function Home() {
       <Button onClick={handleUpload} disabled={!files.length || loading}>
         {loading ? "Processing..." : "Upload Resume"}
       </Button>
+
+      <input type="title" onChange={(e) => setTitle(e.target.value)} />
+      <textarea
+        name="description"
+        onChange={(e) => setDescription(e.target.value)}
+      ></textarea>
+      <Button onClick={handleCreate}>Create Job</Button>
     </div>
   );
 }
