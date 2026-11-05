@@ -48,8 +48,14 @@ export const processJobDescription = inngest.createFunction(
 
       // 4. Normalize and save extracted information
       await step.run("save-job-details", async () => {
-        const { minExperience, location, skills, education, responsibilities } =
-          extractedData;
+        const {
+          minExperience,
+          maxExperience,
+          location,
+          skillGroups,
+          education,
+          responsibilities,
+        } = extractedData;
 
         let educationData = undefined;
 
@@ -78,20 +84,27 @@ export const processJobDescription = inngest.createFunction(
           };
         }
 
-        const normalizedSkills = skills.map((skill) => ({
-          ...skill,
-          normalizedName: normalizeSkill(skill.name),
+        const normalizedSkillGroups = skillGroups.map((group) => ({
+          category: group.category,
+          requirementType: group.requirementType,
+          skills: {
+            create: group.skills.map((skill) => ({
+              name: skill.name,
+              normalizedName: normalizeSkill(skill.name),
+            })),
+          },
         }));
 
         await prisma.job.update({
           where: { id: job.id },
           data: {
             minExperience: minExperience,
+            maxExperience: maxExperience,
             location: location,
             jobResponsibility: responsibilities,
 
-            skills: {
-              create: normalizedSkills,
+            skillGroups: {
+              create: normalizedSkillGroups,
             },
 
             ...(educationData && {

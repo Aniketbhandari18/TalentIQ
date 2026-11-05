@@ -130,9 +130,10 @@ model Job {
   title         String
   description   String  @db.Text
   minExperience Int?
+  maxExperience Int?
   location      String?
 
-  skills               SkillRequirement[]
+  skillGroups          SkillGroup[]
   educationRequirement EducationRequirement?
   jobResponsibility    String[]              @default([])
 
@@ -149,16 +150,31 @@ model Job {
   @@index([createdById])
 }
 
-model SkillRequirement {
-  id             String  @id @default(cuid())
-  name           String
-  normalizedName String
-  mustHave       Boolean // preferred not must
+// This model represents a group of skills for a job, which can have multiple skill requirements
+model SkillGroup {
+  id       String @id @default(cuid())
+  category String // e.g., "Programming Languages", "Frameworks", "Tools"
+
+  requirementType SkillGroupType @default(ANY) // whether all skill are required (ALL), any one is required (REQUIRED), or none are required but preferred (PREFERRED)
+
+  skills SkillRequirement[] // skills that belong to this group
 
   jobId String
   job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
-  @@unique([jobId, normalizedName])
+  @@index([jobId])
+}
+
+// This model represents a skill requirement for a job, which belongs to a skill group
+model SkillRequirement {
+  id             String @id @default(cuid())
+  name           String
+  normalizedName String
+
+  groupId String
+  group   SkillGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, normalizedName])
   @@index([normalizedName])
 }
 
@@ -207,4 +223,10 @@ enum JobExtractionStatus {
   PROCESSING
   COMPLETED
   FAILED
+}
+
+enum SkillGroupType {
+  ANY
+  ALL
+  PREFERRED // this group is preferred but not mandatory, i.e., if the candidate has skills from this group, it will be a plus point, but not having them will not disqualify the candidate
 }

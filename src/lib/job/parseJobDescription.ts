@@ -19,15 +19,42 @@ ${job.description}
 
   const jobExtractionSchema = z.object({
     minExperience: z.number().int().nonnegative().nullable(),
+    maxExperience: z.number().int().nonnegative().nullable(),
     location: z.string().nullable(),
 
     responsibilities: z.array(z.string()),
 
-    skills: z.array(
-      z.object({
-        name: z.string(),
-        mustHave: z.boolean(),
-      }),
+    skillGroups: z.array(
+      z
+        .object({
+          category: z
+            .string()
+            .describe(
+              "Descriptive category of the skill group, e.g., 'Programming Languages', 'Databases'",
+            ),
+
+          requirementType: z
+            .enum(["ANY", "ALL", "PREFERRED"])
+            .describe(
+              "ANY means at least one skill in the group is required. ALL means every skill in the group is required. PREFERRED means the skills in the group are preferred but not mandatory",
+            ),
+
+          skills: z
+            .array(
+              z.object({
+                name: z
+                  .string()
+                  .describe(
+                    "Original skill name extracted from the job description.",
+                  ),
+              }),
+            )
+            .min(1)
+            .describe("A list of skills that belong to this skill group"),
+        })
+        .describe(
+          "A group of skills for a job, which can have multiple skill requirements",
+        ),
     ),
 
     education: z
@@ -53,7 +80,11 @@ ${job.description}
           }),
         ),
         relatedDegreesAllowed: z.boolean(),
-        relatedDegreeFieldsOfStudy: z.array(z.string()),
+        relatedDegreeFieldsOfStudy: z
+          .array(z.string())
+          .describe(
+            "A list of related degree fields of study that are allowed for this job in case relatedDegreesAllowed is true",
+          ),
         isMandatory: z.boolean(),
       })
       .nullable(),
@@ -68,6 +99,9 @@ ${job.description}
     prompt: prompt,
   });
 
-  console.log(output);
+  console.dir(output, {
+    depth: null,
+    colors: true,
+  });
   return output;
 }
