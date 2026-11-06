@@ -48,9 +48,7 @@ export const processResume = inngest.createFunction(
           throw new Error("Failed to download PDF");
         }
 
-        const buffer = Buffer.from(await data.arrayBuffer());
-
-        const text = await extractRawText(buffer);
+        const text = await extractRawText(data);
 
         if (!text) {
           throw new Error("No text could be extracted from resume");

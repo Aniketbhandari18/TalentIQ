@@ -1,23 +1,24 @@
-import PDFParser from "pdf2json";
+export async function extractRawText(blob: Blob) {
+  const formData = new FormData();
 
-export async function extractRawText(buffer: Buffer): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const pdfParser = new PDFParser(null, true);
+  formData.append("file", blob, "resume.pdf");
 
-    pdfParser.once(
-      "pdfParser_dataError",
-      (err: Error | { parserError: Error }) => {
-        console.error("PDF parsing error:", err);
-        const errorObj = "parserError" in err ? err.parserError : err;
-        reject(new Error(errorObj?.message || "Failed to parse PDF"));
-      },
-    );
-
-    pdfParser.once("pdfParser_dataReady", () => {
-      const rawText = pdfParser.getRawTextContent();
-      resolve(rawText);
-    });
-
-    pdfParser.parseBuffer(buffer);
+  const response = await fetch("http://127.0.0.1:8000/extract", {
+    method: "POST",
+    body: formData,
   });
+
+  if (!response.ok) {
+    throw new Error("Failed to extract PDF text");
+  }
+
+  const data = await response.json();
+
+  if (!data.text?.trim()) {
+    throw new Error("No text could be extracted from resume");
+  }
+
+  console.log("extracted resume data:", data.text);
+
+  return data.text as string;
 }

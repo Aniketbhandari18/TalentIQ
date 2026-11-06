@@ -60,6 +60,9 @@ export async function parseResume(resumeText: string) {
     prompt: resumeText,
   });
 
-  console.log(output);
+  console.dir(output, {
+    depth: null,
+    colors: true,
+  });
   return output;
 }
