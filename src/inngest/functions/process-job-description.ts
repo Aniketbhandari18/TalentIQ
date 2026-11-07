@@ -101,7 +101,9 @@ export const processJobDescription = inngest.createFunction(
             minExperience: minExperience,
             maxExperience: maxExperience,
             location: location,
-            jobResponsibility: responsibilities,
+            JobResponsibilities: {
+              create: responsibilities,
+            },
 
             skillGroups: {
               create: normalizedSkillGroups,

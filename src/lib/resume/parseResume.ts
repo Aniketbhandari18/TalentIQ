@@ -17,7 +17,10 @@ export async function parseResume(resumeText: string) {
       z.object({
         company: z.string(),
         position: z.string(),
-        description: z.string().nullable(),
+        points: z
+          .array(z.string())
+          .default([])
+          .describe("Individual points from the experience description"),
         startDate: z.string().nullable(),
         endDate: z.string().nullable(),
       }),
@@ -25,7 +28,10 @@ export async function parseResume(resumeText: string) {
     projects: z.array(
       z.object({
         title: z.string(),
-        description: z.string(),
+        points: z
+          .array(z.string())
+          .default([])
+          .describe("Individual points from the project description"),
         technologies: z.array(z.string()),
         projectUrl: z.string().nullable(),
       }),

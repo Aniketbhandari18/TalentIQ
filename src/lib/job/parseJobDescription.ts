@@ -22,7 +22,19 @@ ${job.description}
     maxExperience: z.number().int().nonnegative().nullable(),
     location: z.string().nullable(),
 
-    responsibilities: z.array(z.string()),
+    responsibilities: z.array(
+      z.object({
+        responsibility: z.string().describe("An individual job responsibility"),
+        weight: z
+          .number()
+          .int()
+          .min(1)
+          .max(10)
+          .describe(
+            "Relevance of this responsibility for the job, from 1 (low importance) to 10 (highest importance)",
+          ),
+      }),
+    ),
 
     skillGroups: z.array(
       z

@@ -71,6 +71,17 @@ export const processResume = inngest.createFunction(
       // Normalize skills
       const normalizedSkills = normalizeSkills(skills);
 
+      // Construct descriptions from individual points
+      const formattedProjects = projects.map((project) => ({
+        ...project,
+        description: project.points.join("\n"),
+      }));
+
+      const formattedExperience = experience.map((exp) => ({
+        ...exp,
+        description: exp.points.join("\n"),
+      }));
+
       await prisma.candidate.create({
         data: {
           ...candidateData,
@@ -79,10 +90,10 @@ export const processResume = inngest.createFunction(
           uploadedById: uploadedById,
           resumeId: resumeId,
           projects: {
-            create: projects,
+            create: formattedProjects,
           },
           experience: {
-            create: experience,
+            create: formattedExperience,
           },
           education: {
             create: education,

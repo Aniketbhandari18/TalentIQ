@@ -38,12 +38,14 @@ Skill Extraction Rules:
   - For Engineering/Other: Thermodynamics, Circuit Design, Fluid Mechanics, UX Research, etc. (extract whatever matches the candidate's core domain) etc.
 
 For experience:
-- Extract company, position, description, startDate and endDate.
+- Extract company, position, individual points in the experience description, startDate and endDate.
+- Experience descriptions may contain multiple points, responsibilities, contributions, or achievements. Extract each meaningful point individually into the points array instead of combining them into one.
 - Use null for missing information.
 - Use null for endDate if the person is currently working there.
 
 For projects:
-- Extract title, description, technologies and projectUrl.
+- Extract title, individual points from the project description, technologies and projectUrl.
+- Project descriptions may contain multiple points, features, implementations, contributions, or achievements. Extract each meaningful point individually into the points array instead of combining them into one.
 - Do not invent project URLs.
 
 For education:
@@ -71,6 +73,23 @@ IMPORTANT RULES:
 - Do not assume related degrees are accepted.
 - Return an empty array when no responsibilities or skills are found.
 - Return valid JSON only. Do not include markdown.
+
+RESPONSIBILITY EXTRACTION RULES:
+
+1. Extract individual job responsibilities as separate entries.
+2. Each responsibility should describe one distinct duty, task, or area of accountability.
+3. If a sentence contains multiple distinct responsibilities, split them into separate entries.
+4. Preserve the original meaning. Do not invent or unnecessarily expand responsibilities.
+5. Avoid duplicate or overlapping responsibilities.
+6. Assign each responsibility a weight from 1 to 10 based on its relevance to the role:
+  - 1-3: Low relevance or secondary responsibility.
+  - 4-6: Moderate relevance or regular responsibility.
+  - 7-8: High relevance or core responsibility.
+  - 9-10: Critical responsibility central to the role.
+7. Consider the emphasis, relevance, and relevance of each responsibility to the job's primary purpose when assigning weights.
+8. Do not assign every responsibility the same weight unless their relevance is genuinely similar.
+9. Higher weights should represent greater relevance to the role, not the complexity or length of the responsibility.
+10. Return an empty array if no responsibilities are found.
 
 SKILL EXTRACTION RULES:
 
