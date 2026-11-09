@@ -15,12 +15,10 @@ const bulkUploadSchema = z.object({
       }),
     )
     .min(1)
-    .max(100),
+    .max(500),
 });
 
 export async function POST(req: NextRequest) {
-  let resumeId: string | undefined;
-
   try {
     // 1. Authenticate recruiter
     const { userId: clerkId } = await auth();
@@ -60,7 +58,7 @@ export async function POST(req: NextRequest) {
     });
 
     // 5. Trigger background job to process resumes
-    const result = await inngest.send(
+    await inngest.send(
       resumes.map((resume) => ({
         name: "process/resume",
         data: {
