@@ -1,3 +1,4 @@
+import { generateEmbeddings } from "@/lib/ai/embeddings";
 import { normalizeDegree } from "@/lib/degreeNormalizer";
 import { normalizeFieldsOfStudy } from "@/lib/fieldOfStudyNormalizer";
 import { inngest } from "@/lib/inngest/client";
@@ -9,6 +10,19 @@ export const processJobDescription = inngest.createFunction(
   {
     id: "process-job-description",
     triggers: { event: "job/extraction" },
+    onFailure: async ({ event, error, step }) => {
+      const { jobId } = event.data.event.data;
+
+      await step.run("mark-job-extraction-failed", async () => {
+        await prisma.job.update({
+          where: { id: jobId },
+          data: {
+            extractionStatus: "FAILED",
+            extractionError: error.message,
+          },
+        });
+      });
+    },
   },
   async ({ event, step }) => {
     const { jobId } = event.data;
@@ -45,6 +59,17 @@ export const processJobDescription = inngest.createFunction(
           description: job.description,
         });
       });
+
+      const responsibilityEmbeddings = await step.run(
+        "generate-responsibility-embeddings",
+        async () => {
+          const { responsibilities } = extractedData;
+
+          return await generateEmbeddings(
+            responsibilities.map((item) => item.responsibility),
+          );
+        },
+      );
 
       // 4. Normalize and save extracted information
       await step.run("save-job-details", async () => {
@@ -95,6 +120,14 @@ export const processJobDescription = inngest.createFunction(
           },
         }));
 
+        // 5. Attach the corresponding embedding to each responsibility
+        const responsibilitiesWithEmbeddings = responsibilities.map(
+          (responsibility, index) => ({
+            ...responsibility,
+            embedding: responsibilityEmbeddings[index],
+          }),
+        );
+
         await prisma.job.update({
           where: { id: job.id },
           data: {
@@ -102,7 +135,7 @@ export const processJobDescription = inngest.createFunction(
             maxExperience: maxExperience,
             location: location,
             JobResponsibilities: {
-              create: responsibilities,
+              create: responsibilitiesWithEmbeddings,
             },
 
             skillGroups: {
@@ -114,6 +147,17 @@ export const processJobDescription = inngest.createFunction(
                 create: educationData,
               },
             }),
+          },
+        });
+      });
+
+      // 6. update job extraction status
+      await step.run("update-job-status", async () => {
+        await prisma.job.update({
+          where: { id: jobId },
+          data: {
+            extractionStatus: "COMPLETED",
+            extractionError: null,
           },
         });
       });

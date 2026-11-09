@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { extractRawText } from "@/lib/resume/extractRawText";
 import { parseResume } from "@/lib/resume/parseResume";
 import { normalizeSkills } from "@/lib/skillNormalizer";
+import { generateEmbeddings } from "@/lib/ai/embeddings";
 
 export const processResume = inngest.createFunction(
   {
@@ -13,6 +14,19 @@ export const processResume = inngest.createFunction(
       limit: 5,
     },
     triggers: { event: "process/resume" },
+    onFailure: async ({ event, error, step }) => {
+      const { resumeId } = event.data.event.data;
+
+      await step.run("mark-resume-status-failed", async () => {
+        await prisma.resume.update({
+          where: { id: resumeId },
+          data: {
+            status: "FAILED",
+            errorMessage: error.message,
+          },
+        });
+      });
+    },
   },
   async ({ event, step }) => {
     const { resumeId, uploadedById } = event.data;
@@ -32,7 +46,10 @@ export const processResume = inngest.createFunction(
     await step.run("mark-processing", async () => {
       await prisma.resume.update({
         where: { id: resumeId },
-        data: { status: "PROCESSING" },
+        data: {
+          status: "PROCESSING",
+          errorMessage: null,
+        },
       });
     });
 
@@ -63,8 +80,23 @@ export const processResume = inngest.createFunction(
       return await parseResume(extractedRawText);
     });
 
-    // 5. Create new Candidate using extracted information
-    await step.run("create-candidate", async () => {
+    // 5. Generate embeddings for all Experience and Project points
+    const { experience, projects } = parsedData;
+
+    const pointEntries = [
+      ...experience.flatMap((exp) => exp.points),
+      ...projects.flatMap((project) => project.points),
+    ];
+
+    const pointEmbeddings = await step.run(
+      "generate-candidate-point-embeddings",
+      async () => {
+        return await generateEmbeddings(pointEntries);
+      },
+    );
+
+    // 6. Create new Candidate using extracted information
+    const createdCandidate = await step.run("create-candidate", async () => {
       const { skills, projects, experience, education, ...candidateData } =
         parsedData;
 
@@ -82,7 +114,7 @@ export const processResume = inngest.createFunction(
         description: exp.points.join("\n"),
       }));
 
-      await prisma.candidate.create({
+      return await prisma.candidate.create({
         data: {
           ...candidateData,
           skills: skills,
@@ -99,15 +131,69 @@ export const processResume = inngest.createFunction(
             create: education,
           },
         },
+
+        select: {
+          id: true,
+
+          experience: {
+            select: {
+              id: true,
+              points: true,
+            },
+          },
+
+          projects: {
+            select: {
+              id: true,
+              points: true,
+            },
+          },
+        },
       });
     });
 
-    // update resume process status
+    // 7. Save candidate point embeddings
+    await step.run("save-candidate-point-embeddings", async () => {
+      const embeddingByContent = new Map<string, number[]>();
+
+      pointEntries.forEach((content, index) => {
+        embeddingByContent.set(content, pointEmbeddings[index]);
+      });
+
+      const embeddingRecords = [
+        ...createdCandidate.experience.flatMap((exp) =>
+          exp.points.map((content) => ({
+            content,
+            embedding: embeddingByContent.get(content)!,
+            candidateId: createdCandidate.id,
+            experienceId: exp.id,
+          })),
+        ),
+
+        ...createdCandidate.projects.flatMap((project) =>
+          project.points.map((content) => ({
+            content,
+            embedding: embeddingByContent.get(content)!,
+            candidateId: createdCandidate.id,
+            projectId: project.id,
+          })),
+        ),
+      ];
+
+      if (embeddingRecords.length > 0) {
+        await prisma.candidatePointEmbedding.createMany({
+          data: embeddingRecords,
+        });
+      }
+    });
+
+    // 8. update resume process status
     await step.run("update-resume-status", async () => {
       await prisma.resume.update({
         where: { id: resumeId },
         data: {
           status: "COMPLETED",
+          errorMessage: null,
         },
       });
     });
