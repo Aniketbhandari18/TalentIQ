@@ -1,4 +1,4 @@
-import skillData from "@/data/degree-aliases.json";
+import skillData from "@/data/skill-aliases.json";
 
 const skillMap = new Map(
   Object.entries(skillData).map(([key, value]) => [normalizeKey(key), value]),
@@ -17,5 +17,5 @@ export function normalizeSkill(skill: string) {
 }
 
 export function normalizeSkills(fields: string[]) {
-  return fields.map(normalizeSkill);
+  return [...new Set(fields.map(normalizeSkill))];
 }

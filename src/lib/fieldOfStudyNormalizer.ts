@@ -20,5 +20,5 @@ export function normalizeFieldOfStudy(degree: string) {
 }
 
 export function normalizeFieldsOfStudy(fields: string[]) {
-  return fields.map(normalizeFieldOfStudy);
+  return [...new Set(fields.map(normalizeFieldOfStudy))];
 }
