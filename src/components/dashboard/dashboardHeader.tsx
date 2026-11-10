@@ -18,9 +18,9 @@ export default function DashboardHeader({
 }: Props) {
   const { user: clerkUser } = useUser();
 
-  if (!clerkUser) return null;
-
   const { openUpload } = useUploadDialog();
+
+  if (!clerkUser) return null;
 
   return (
     <div className="flex flex-col gap-4 rounded-xl border bg-card p-5 shadow-card sm:flex-row sm:items-center sm:justify-between sm:p-6">
