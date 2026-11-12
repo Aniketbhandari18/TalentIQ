@@ -1,4 +1,4 @@
-import { SkillGroupType } from "@prisma/client";
+import { Prisma, SkillGroupType } from "@prisma/client";
 
 export type clerkUserPayload = {
   clerkId: string;
@@ -66,3 +66,18 @@ export interface MatchResult {
   reviewFlags: string[];
   notes: string;
 }
+
+export type JobWithRelations = Prisma.JobGetPayload<{
+  include: {
+    skillGroups: {
+      include: {
+        skills: true;
+      };
+    };
+    educationRequirement: {
+      include: {
+        acceptedDegrees: true;
+      };
+    };
+  };
+}>;

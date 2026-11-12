@@ -38,3 +38,10 @@ export function formatRelative(date: Date, now = new Date()) {
 
   return formatDate(date);
 }
+
+export function formatExperienceRange(min: number | null, max: number | null) {
+  if (min == null && max == null) return "Any experience";
+  if (min != null && max != null) return `${min}–${max} yrs`;
+  if (min != null) return `${min}+ yrs`;
+  return `Up to ${max} yrs`;
+}

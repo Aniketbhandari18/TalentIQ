@@ -49,6 +49,10 @@ export function JobForm({ job, onSubmit }: Props) {
 
           if (result.success) {
             toast.success(result.message);
+            form.reset({
+              title: "",
+              description: "",
+            });
             router.push(`/jobs/${result.jobId}`);
           } else {
             toast.error(result.message);
