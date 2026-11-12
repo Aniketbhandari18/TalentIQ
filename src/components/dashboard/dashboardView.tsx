@@ -24,13 +24,28 @@ export default async function DashboardView() {
 
   let [recentCandidates, totalCandidates] = await Promise.all([
     prisma.candidate.findMany({
+      where: {
+        resume: {
+          uploadedBy: {
+            clerkId: clerkId,
+          },
+        },
+      },
       orderBy: {
         createdAt: "desc",
       },
       take: 5,
     }),
 
-    prisma.candidate.count(),
+    prisma.candidate.count({
+      where: {
+        resume: {
+          uploadedBy: {
+            clerkId: clerkId,
+          },
+        },
+      },
+    }),
   ]);
 
   let [recentJobs, totalJobs, activeJobs] = await Promise.all([
