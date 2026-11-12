@@ -8,6 +8,7 @@ import { z } from "zod/v4";
 const createJobSchema = z.object({
   title: z.string().trim().min(1, "Job title is required"),
   description: z.string().trim().min(1, "Job description is required"),
+  activate: z.boolean().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
       throw new ApiError(validation.error.issues[0].message, 400);
     }
 
-    const { title, description } = validation.data;
+    const { title, description, activate } = validation.data;
 
     // 4. Create job
     const job = await prisma.job.create({
@@ -44,38 +45,46 @@ export async function POST(req: NextRequest) {
         title,
         description,
         createdById: user.id,
+        status: activate ? "ACTIVE" : "DRAFT",
       },
     });
 
-    // 5. Trigger background extraction
-    try {
-      await inngest.send({
-        name: "job/extraction",
-        data: {
-          jobId: job.id,
-        },
-      });
-    } catch (error) {
-      console.error("Failed to trigger job extraction:", error);
+    // 5. Trigger background extraction if job is activated
+    if (activate) {
+      try {
+        await inngest.send({
+          name: "job/extraction",
+          data: {
+            jobId: job.id,
+          },
+        });
+      } catch (error) {
+        console.error("Failed to trigger job extraction:", error);
 
-      // Keep the job saved, but mark extraction as failed
-      await prisma.job.update({
-        where: { id: job.id },
-        data: {
-          extractionStatus: "FAILED",
-          extractionError: "Failed to schedule job extraction",
-        },
-      });
+        // Keep the job saved, but mark extraction as failed
+        await prisma.job.update({
+          where: { id: job.id },
+          data: {
+            extractionStatus: "FAILED",
+            extractionError: "Failed to schedule job extraction",
+          },
+        });
 
-      throw new ApiError(
-        "Job created, but extraction could not be scheduled",
-        503,
-      );
+        throw new ApiError(
+          "Job created, but extraction could not be scheduled",
+          503,
+        );
+      }
     }
 
     // 6. Return response
     return NextResponse.json(
-      { message: "Job created successfully" },
+      {
+        message: "Job created successfully",
+        data: {
+          id: job.id,
+        },
+      },
       { status: 201 },
     );
   } catch (error) {
