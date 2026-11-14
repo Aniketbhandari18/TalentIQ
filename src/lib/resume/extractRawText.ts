@@ -3,7 +3,7 @@ export async function extractRawText(blob: Blob) {
 
   formData.append("file", blob, "resume.pdf");
 
-  const response = await fetch("http://127.0.0.1:8000/extract", {
+  const response = await fetch(`${process.env.PYTHON_SERVICE_URL}/extract`, {
     method: "POST",
     body: formData,
   });
