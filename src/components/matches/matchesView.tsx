@@ -454,26 +454,26 @@ export function MatchesView({
 
                               <TableCell>
                                 <ScoreRing
-                                  value={match.overallScore}
+                                  value={match.overallScore || 0}
                                   size={40}
                                   stroke={3.5}
                                 />
                               </TableCell>
 
                               <TableCell>
-                                <ScoreBar value={match.skillScore} />
+                                <ScoreBar value={match.skillScore || 0} />
                               </TableCell>
 
                               <TableCell>
-                                <ScoreBar value={match.experienceScore} />
+                                <ScoreBar value={match.experienceScore || 0} />
                               </TableCell>
 
                               <TableCell>
-                                <ScoreBar value={match.responsibilityScore} />
+                                <ScoreBar value={match.responsibilityScore || 0} />
                               </TableCell>
 
                               <TableCell>
-                                <ScoreBar value={match.educationScore} />
+                                <ScoreBar value={match.educationScore || 0} />
                               </TableCell>
 
                               <TableCell>
@@ -517,7 +517,7 @@ export function MatchesView({
                             #{rank}
                           </span>
 
-                          <ScoreRing value={match.overallScore} size={42} />
+                          <ScoreRing value={match.overallScore || 0} size={42} />
 
                           <div className="min-w-0 flex-1">
                             <p className="truncate font-medium">
@@ -549,7 +549,7 @@ export function MatchesView({
                             <p className="mb-1 text-muted-foreground">
                               {label}
                             </p>
-                            <ScoreBar value={value} />
+                            <ScoreBar value={value || 0} />
                           </div>
                         ))}
                       </div>
