@@ -81,3 +81,23 @@ export type JobWithRelations = Prisma.JobGetPayload<{
     };
   };
 }>;
+
+export type CandidateWithRelations = Prisma.CandidateGetPayload<{
+  include: {
+    education: true,
+    experience: true,
+    projects: true,
+    candidatePointEmbeddings: true,
+
+    // skillGroups: {
+    //   include: {
+    //     skills: true;
+    //   };
+    // };
+    // educationRequirement: {
+    //   include: {
+    //     acceptedDegrees: true;
+    //   };
+    // };
+  };
+}>;

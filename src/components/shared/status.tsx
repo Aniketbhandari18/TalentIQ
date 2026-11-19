@@ -102,7 +102,7 @@ export function ScoreBar({
       </div>
       {showValue && (
         <span className="w-7 text-right text-xs font-medium tabular-nums text-foreground/80">
-          {value}
+          {value.toFixed(1)}
         </span>
       )}
     </div>
@@ -148,7 +148,7 @@ export function ScoreRing({
         />
       </svg>
       <span className="absolute text-xs font-semibold tabular-nums">
-        {value}
+        {value.toFixed(0)}
       </span>
     </div>
   );
