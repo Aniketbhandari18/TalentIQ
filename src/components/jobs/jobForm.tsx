@@ -53,7 +53,7 @@ export function JobForm({ job, onSubmit }: Props) {
               title: "",
               description: "",
             });
-            router.push(`/jobs/${result.jobId}`);
+            router.push(`/jobs/${result.jobId}/matches`);
           } else {
             toast.error(result.message);
           }
