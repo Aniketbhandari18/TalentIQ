@@ -97,8 +97,14 @@ export const processResume = inngest.createFunction(
 
     // 6. Create new Candidate using extracted information
     const createdCandidate = await step.run("create-candidate", async () => {
-      const { skills, projects, experience, education, ...candidateData } =
-        parsedData;
+      const {
+        skills,
+        skillEvidence,
+        projects,
+        experience,
+        education,
+        ...candidateData
+      } = parsedData;
 
       // Normalize skills
       const normalizedSkills = normalizeSkills(skills);
@@ -114,6 +120,16 @@ export const processResume = inngest.createFunction(
         description: exp.points.join("\n"),
       }));
 
+      const formattedSkillEvidence = skillEvidence.map((item) => ({
+        skill: item.skill,
+        normalizedSkill: normalizeSkills([item.skill])[0],
+        source: item.source,
+        evidenceType: item.evidenceType,
+        sourceTitle: item.sourceTitle,
+        companyName: item.companyName,
+        evidence: item.evidence,
+      }));
+
       return await prisma.candidate.create({
         data: {
           ...candidateData,
@@ -121,6 +137,9 @@ export const processResume = inngest.createFunction(
           normalizedSkills: normalizedSkills,
           uploadedById: uploadedById,
           resumeId: resumeId,
+          skillEvidence: {
+            create: formattedSkillEvidence,
+          },
           projects: {
             create: formattedProjects,
           },

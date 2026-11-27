@@ -13,6 +13,18 @@ export async function parseResume(resumeText: string) {
     location: z.string().nullable(),
     linkedIn: z.string().nullable(),
     skills: z.array(z.string()),
+    skillEvidence: z
+      .array(
+        z.object({
+          skill: z.string(),
+          source: z.enum(["SKILLS_SECTION", "PROJECT", "WORK_EXPERIENCE"]),
+          evidenceType: z.enum(["LISTED", "EXPLICIT", "INFERRED"]),
+          sourceTitle: z.string().nullable(),
+          companyName: z.string().nullable(),
+          evidence: z.string().nullable(),
+        }),
+      )
+      .default([]),
     experience: z.array(
       z.object({
         company: z.string(),
@@ -70,5 +82,6 @@ export async function parseResume(resumeText: string) {
     depth: null,
     colors: true,
   });
+
   return output;
 }

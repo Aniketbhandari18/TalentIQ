@@ -53,8 +53,9 @@ model Candidate {
   location String?
   linkedIn String?
 
-  skills           String[]     @default([])
-  normalizedSkills String[]     @default([])
+  skills           String[]                 @default([])
+  normalizedSkills String[]                 @default([])
+  skillEvidence    CandidateSkillEvidence[]
   projects         Project[]
   experience       Experience[]
   education        Education[]
@@ -67,10 +68,34 @@ model Candidate {
   uploadedById String // id of recruiter who uploaded this candidate's resume
   uploadedBy   User   @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
 
-  resumeId String @unique
-  resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  resumeId         String           @unique
+  resume           Resume           @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  candidateMatches CandidateMatch[]
 
   @@index([uploadedById])
+}
+
+model CandidateSkillEvidence {
+  id String @id @default(cuid())
+
+  skill           String
+  normalizedSkill String
+
+  source       SkillEvidenceSource
+  evidenceType SkillEvidenceType
+
+  sourceTitle String? // eg. Project title (if the skill is found/inferred in/from project)
+  evidence    String? // eg. Project describes building reusable UI components(evidence for react.js in case of evidence type as inferred)
+  companyName String? // Used if the evidence is from experience
+
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+}
+
+enum SkillEvidenceType {
+  LISTED
+  EXPLICIT
+  INFERRED
 }
 
 model Experience {
@@ -114,7 +139,8 @@ model Education {
   grade          Float?
 
   candidateId String
-  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  candidate   Candidate        @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  matchedFor  EducationMatch[]
 }
 
 enum EducationLevel {
@@ -149,11 +175,14 @@ model Job {
   extractionStatus JobExtractionStatus @default(PENDING)
   extractionError  String?
 
+  lastEvaluatedAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  createdById String
-  createdBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  createdById      String
+  createdBy        User             @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  candidateMatches CandidateMatch[]
 
   @@index([createdById])
 }
@@ -226,8 +255,9 @@ model jobResponsibility {
   embedding      Float[] // Vector embedding of the responsibility used for semantic matching with candidate points
   weight         Int // weight/importance of this responsibility based on its relevance and importance to the job
 
-  jobId String
-  job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  jobId                 String
+  job                   Job                   @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  responsibilityMatches ResponsibilityMatch[]
 }
 
 enum JobStatus {
@@ -259,9 +289,204 @@ model CandidatePointEmbedding {
   experienceId String?
   projectId    String?
 
-  candidate  Candidate   @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-  experience Experience? @relation(fields: [experienceId], references: [id], onDelete: Cascade)
-  project    Project?    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  candidate               Candidate                @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  experience              Experience?              @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+  project                 Project?                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  responsibilityEvidences ResponsibilityEvidence[]
 
   @@index([candidateId])
+}
+
+model CandidateMatch {
+  id String @id @default(cuid())
+
+  overallScore        Float?
+  skillScore          Float?
+  educationScore      Float?
+  experienceScore     Float?
+  responsibilityScore Float?
+
+  skillGroups           SkillGroupMatch[]
+  educationEvaluation   EducationMatch?
+  experienceEvaluation  ExperienceMatch?
+  responsibilityMatches ResponsibilityMatch[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  jobId String
+  job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, candidateId])
+  @@index([jobId, overallScore(sort: Desc)])
+  @@index([candidateId])
+}
+
+model SkillGroupMatch {
+  id String @id @default(cuid())
+
+  category        String // e.g., "Programming Languages", "Frameworks", "Tools"
+  requirementType SkillGroupType
+
+  score Float
+
+  totalCount        Int // Total no. of skills in this group
+  matchedCount      Int // Total no. of skills candidate matched
+  demonstratedCount Int
+  listedCount       Int
+  missingCount      Int
+
+  skillResults SkillRequirementMatch[]
+
+  createdAt DateTime @default(now())
+
+  matchId String
+  match   CandidateMatch @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  @@index([matchId])
+}
+
+model SkillRequirementMatch {
+  id String @id @default(cuid())
+
+  // Snapshot of the required skill
+  name           String
+  normalizedName String
+
+  // status         SkillMatchStatus
+  evidenceType   SkillEvidenceType? // Optional for missing case
+  evidenceSource SkillEvidenceSource @default(NONE)
+
+  evidenceTitle String? // eg. Project title (if the skill is found/inferred in/from project) or position
+  evidence      String? // eg. Project describes building reusable UI components(evidence for react.js in case of evidence type as inferred)
+  companyName   String? // Used if the evidence is from experience
+
+  // 0–1 credit assigned to this skill
+  credit Float
+
+  // evidenceTitle String? // Project/Position title
+
+  createdAt DateTime @default(now())
+
+  groupMatchId String
+  groupMatch   SkillGroupMatch @relation(fields: [groupMatchId], references: [id], onDelete: Cascade)
+
+  @@index([groupMatchId])
+}
+
+enum SkillEvidenceSource {
+  SKILLS_SECTION
+  PROJECT
+  WORK_EXPERIENCE
+  NONE
+}
+
+model EducationMatch {
+  id String @id @default(cuid())
+
+  matchId String         @unique
+  match   CandidateMatch @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  score Float
+
+  // Overall results
+  meetsMinimumLevel     Boolean?
+  acceptedDegreeMatched Boolean?
+  fieldOfStudyMatched   Boolean?
+  relatedDegreeUsed     Boolean  @default(false)
+
+  // Which education record provided the best match?
+  matchedEducationRecordId String?
+  matchedEducation         Education? @relation(fields: [matchedEducationRecordId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ExperienceMatch {
+  id String @id @default(cuid())
+
+  score Float
+
+  totalWorkExperience Float
+
+  meetsMinimumExperience Boolean?
+  meetsMaximumExperience Boolean?
+
+  matchId String         @unique
+  match   CandidateMatch @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ResponsibilityMatch {
+  id String @id @default(cuid())
+
+  // Snapshot of the job responsibility
+  responsibilityText String @db.Text
+  weight             Int
+
+  // Evaluation results
+  score          Float
+  bestSimilarity Float?
+  matchLevel     ResponsibilityMatchLevel
+
+  matchedEvidenceCount Int @default(0)
+
+  evidence ResponsibilityEvidence[]
+
+  createdAt DateTime @default(now())
+
+  matchId String
+  match   CandidateMatch @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  jobResponsibilityId String?
+  jobResponsibility   jobResponsibility? @relation(fields: [jobResponsibilityId], references: [id], onDelete: SetNull)
+
+  @@index([matchId])
+}
+
+model ResponsibilityEvidence {
+  id String @id @default(cuid())
+
+  // Snapshot of the evidence
+  evidenceText String                       @db.Text
+  sourceType   ResponsibilityEvidenceSource
+  sourceTitle  String? // eg: Project: E-commerce Backend, Experience: Backend Developer at XYZ
+
+  // Similarity between this evidence and the job responsibility
+  similarityScore Float
+
+  // Whether this was the strongest supporting evidence
+  isPrimary Boolean @default(false)
+
+  // explanation String? @db.Text
+
+  createdAt DateTime @default(now())
+
+  responsibilityMatchId String
+  responsibilityMatch   ResponsibilityMatch @relation(fields: [responsibilityMatchId], references: [id], onDelete: Cascade)
+
+  // Link to the original candidate point embedding
+  pointEmbeddingId String?
+  pointEmbedding   CandidatePointEmbedding? @relation(fields: [pointEmbeddingId], references: [id], onDelete: SetNull)
+
+  @@index([responsibilityMatchId])
+  @@index([pointEmbeddingId])
+}
+
+enum ResponsibilityMatchLevel {
+  STRONG
+  PARTIAL
+  WEAK
+  NONE
+}
+
+enum ResponsibilityEvidenceSource {
+  PROJECT
+  EXPERIENCE
 }

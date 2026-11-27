@@ -1,4 +1,4 @@
-import type { EvaluationStatus } from "@/types";
+import type { EvaluationStatus, MatchTier } from "@/types";
 import { Pill, type PillTone } from "./primitives";
 import { cn } from "@/lib/utils";
 import { JobExtractionStatus, JobStatus, ResumeStatus } from "@prisma/client";
@@ -69,6 +69,29 @@ export function EvaluationStatusPill({ status }: { status: EvaluationStatus }) {
   return <Pill tone={info.tone}>{info.label}</Pill>;
 }
 
+export function matchTier(score: number | null): MatchTier {
+  if (score === null) return "low";
+  if (score >= 75) return "strong";
+  if (score >= 55) return "potential";
+  return "low";
+}
+
+export const MATCH_TIER_INFO: Record<
+  MatchTier,
+  { label: string; tone: PillTone }
+> = {
+  strong: { label: "Strong", tone: "success" },
+  potential: { label: "Potential", tone: "warning" },
+  low: { label: "Low", tone: "neutral" },
+};
+
+export function MatchTierPill({ score }: { score: number | null }) {
+  const tier = matchTier(score);
+  const info = MATCH_TIER_INFO[tier];
+
+  return <Pill tone={info.tone}>{info.label}</Pill>;
+}
+
 // ---------- Scores ----------
 export function scoreTone(score: number) {
   if (score >= 75)
@@ -102,7 +125,7 @@ export function ScoreBar({
       </div>
       {showValue && (
         <span className="w-7 text-right text-xs font-medium tabular-nums text-foreground/80">
-          {value}
+          {value.toFixed(1)}
         </span>
       )}
     </div>
@@ -148,7 +171,7 @@ export function ScoreRing({
         />
       </svg>
       <span className="absolute text-xs font-semibold tabular-nums">
-        {value}
+        {value.toFixed(0)}
       </span>
     </div>
   );

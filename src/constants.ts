@@ -48,7 +48,42 @@ For projects:
 - Project descriptions may contain multiple points, features, implementations, contributions, or achievements. Extract each meaningful point individually into the points array instead of combining them into one.
 - Do not invent project URLs.
 
-For education:
+
+Skill Evidence Extraction Rules:
+
+- Every skill in the skills array must have exactly one corresponding record in skillEvidence.
+- The skill name must match exactly, including spelling and formatting.
+- Generate the skills array from skills explicitly mentioned in the resume. Then use that generated array as the fixed source for skillEvidence. Never introduce additional skills during evidence extraction. Both arrays must contain exactly the same unique skills, with one evidence record per skill.
+- If a skill has multiple evidence sources across the resume, retain only its strongest evidence.
+- EXPLICIT: The resume directly describes using, implementing, or working with the skill in project/experience section.
+- INFERRED: The exact skill name is not mentioned in the project or work experience description, but the described functionality or technical concepts strongly relate to a skill already present in the generated skills array. Map existing skills to relevant descriptions without assuming which technology was used.
+- LISTED: Use only when the skill is mentioned by name and no meaningful supporting evidence exists anywhere else in the resume.
+- Important: Do not automatically classify a skill as LISTED just because it appears in the Skills section. Always search the entire resume for supporting evidence. A listed skill can be classified as EXPLICIT or INFERRED if other sections support it.
+- Evidence priority: EXPLICIT > INFERRED > LISTED.
+- If evidence types are equal, prefer WORK_EXPERIENCE > PROJECT > SKILLS_SECTION.
+- Never create duplicate evidence records for the same skill.
+- sourceTitle: Project title or job title/position; null for SKILLS_SECTION.
+- companyName: Company name if evidence type is WORK_EXPERIENCE; otherwise null.
+- evidence: Short, factual explanation based on the resume. Use null for LISTED. eg: Implemented global state management across multiple components. (Classified as INFERRED for Zustand when Zustand is listed in the resume, but not explicitly mentioned in the project or work experience description.)
+- Related Skill Evidence Mapping: When a skill in the generated skills array is closely related to a technology, framework, or tool explicitly mentioned in a project or work experience, map the description to that skill as INFERRED, provided the relationship strongly supports it. For example, if React is explicitly used in a project and JavaScript is already present in the skills array, classify JavaScript as INFERRED even if JavaScript is not directly mentioned. Never introduce new skills during this process.
+
+
+Education Extraction Rules:
+1. Always return canonical, standardized qualification names rather than copying abbreviations, alternative spellings, or formatting from the resume.
+
+2. For the degree field:
+- Remove abbreviations in parentheses.
+- Do not include redundant abbreviations alongside the full degree name.
+Examples:
+"BCA", "Bachelor of Computer Applications (BCA)" → "Bachelor of Computer Applications"
+"B.Sc. (Computer Science)" -> "Bachelor of Science"
+
+3. For the fieldOfStudy field:
+- Remove unnecessary abbreviations and redundant parenthetical expansions.
+Examples:
+"Computer Science (CS)" -> "Computer Science"
+
+For education level:
 - SECONDARY = Class 10
 - HIGHER_SECONDARY = Class 12
 - UNDERGRADUATE = Bachelor's degree
@@ -110,6 +145,14 @@ SKILL EXTRACTION RULES:
 7. Do not include vague or generic skills such as "communication skills", "teamwork", or "positive attitude" in skillGroups.
 
 8. Never classify a preferred skill as ANY or All.
+
+9. Skill Canonicalization & Standardization:
+- Remove abbreviations in parentheses.
+- Do not include redundant abbreviations alongside the skill name.
+Examples:
+"JavaScript (ES6+)", "JavaScript ES6" -> "JavaScript"
+"Object-Oriented Programming (OOP)" -> "Object-Oriented Programming"
+"NodeJS", "Node" -> "Node.js"
 
 EDUCATION EXTRACTION RULES:
 

@@ -11,6 +11,8 @@ export type EvaluationStatus =
   | "REJECTED"
   | "NEEDS_REVIEW";
 
+export type MatchTier = "strong" | "potential" | "low";
+
 export interface SkillMatch {
   skill: string;
   groupCategory: string;
@@ -79,5 +81,25 @@ export type JobWithRelations = Prisma.JobGetPayload<{
         acceptedDegrees: true;
       };
     };
+  };
+}>;
+
+export type CandidateWithRelations = Prisma.CandidateGetPayload<{
+  include: {
+    education: true;
+    experience: true;
+    projects: true;
+    candidatePointEmbeddings: true;
+
+    // skillGroups: {
+    //   include: {
+    //     skills: true;
+    //   };
+    // };
+    // educationRequirement: {
+    //   include: {
+    //     acceptedDegrees: true;
+    //   };
+    // };
   };
 }>;

@@ -162,6 +162,14 @@ export const processJobDescription = inngest.createFunction(
         });
       });
 
+      // run matching
+      await step.sendEvent("trigger-matching", {
+        name: "job/match",
+        data: {
+          jobId,
+        },
+      });
+
       return {
         success: true,
         jobId,
