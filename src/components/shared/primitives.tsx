@@ -7,6 +7,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { SkillGroupType } from "@prisma/client";
 
 // ---------- Logo ----------
 export function Logo({
@@ -310,6 +311,21 @@ export function InitialsAvatar({
       )}
     >
       {letters || "?"}
+    </span>
+  );
+}
+
+export function RequirementTypeBadge({ type }: { type: SkillGroupType }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex h-5 shrink-0 items-center rounded px-1.5 font-mono text-[10px] font-medium tracking-wide",
+        type === "ALL" && "bg-ink text-ink-foreground",
+        type === "ANY" && "bg-primary-soft text-primary-soft-foreground",
+        type === "PREFERRED" && "border border-dashed text-muted-foreground",
+      )}
+    >
+      {type}
     </span>
   );
 }
